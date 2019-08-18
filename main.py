@@ -5,8 +5,7 @@ import math
 import logging
 
 # Change name to match and add your API_KEY
-from .Globals import *
-
+from Globals import *
 
 log_level = logging.INFO
 
@@ -46,8 +45,7 @@ except NotImplementedError:
 class ApiRequest(object):
     def __init__(self):
         self.api_url = 'https://api-v3.mbta.com/'
-        self.api_key = API_KEY
-        self.headers = {"X-API-Key": self.api_key}
+        self.headers = {"X-API-Key": API_KEY}
 
     def call_api(self, url):
         try:
@@ -80,7 +78,6 @@ class Train(ApiRequest):
 
         for obj in vehicles['data']:
             vehicle = obj['attributes']
-            stop = obj['relationships']['stop']['data']
 
             # Convert Direction to text
             if vehicle['direction_id'] == 1:
@@ -91,7 +88,6 @@ class Train(ApiRequest):
                 direction = None
 
             train_dict = dict(stop_sequence=vehicle['current_stop_sequence'],
-                              stop=stop['id'],
                               bearing=vehicle['bearing'],
                               latitude=vehicle['latitude'],
                               longitude=vehicle['longitude'],
