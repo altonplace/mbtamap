@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import requests
 import json
 import time
@@ -10,7 +12,7 @@ from Globals import *
 log_level = logging.INFO
 
 # create logger
-logger = logging.getLogger('MBTALocator')
+logger = logging.getLogger('MBTA-MAP')
 logger.setLevel(log_level)
 
 # create file handler which logs even debug messages
@@ -51,7 +53,7 @@ class ApiRequest(object):
         try:
             r = requests.get(url, headers=self.headers)
             json_response = json.loads(r.text)
-            logger.info('API response: {}'.format(json_response))
+            logger.debug('API response: {}'.format(json_response))
             return json_response
         except Exception as e:
             logger.error(e)
@@ -201,7 +203,7 @@ class Lights(object):
                 pix_list.append('-')
             else:
                 pix_list.append('o')
-        logger.info(''.join(pix_list))
+        logger.debug(''.join(pix_list))
 
         # Send the command to change the lights
         self.__pixel.show()
@@ -246,13 +248,13 @@ def get_data(api_filter, num_lights):
     stops = Stop(api_filter)
     trains = Train(api_filter)
 
-    logger.info('getting stops...')
+    logger.debug('getting stops...')
     stop_list = stops.assign_locations(num_lights)
-    logger.info('retrieved stops: {}'.format(stop_list))
+    logger.debug('retrieved stops: {}'.format(stop_list))
 
-    logger.info('getting trains...')
+    logger.debug('getting trains...')
     train_list = trains.map_to_stop_number(stop_list)
-    logger.info('retrieved trains: {}'.format(train_list))
+    logger.debug('retrieved trains: {}'.format(train_list))
 
     light_list = []
 
@@ -264,30 +266,33 @@ def get_data(api_filter, num_lights):
 
 
 if __name__ == '__main__':
+    try:
+        # check if running on raspi with lights
+        if mock_lights:
+            pixels = LightMock(40)
+            light_on = 'O'
+            light_off = '-'
 
-    if mock_lights:
-        pixels = LightMock(40)
-        light_on = 'O'
-        light_off = '-'
+        else:
+            pixels = Lights(40)
+            light_on = (20, 2, 0)
+            light_off = (0, 0, 0)
 
-    else:
-        pixels = Lights(40)
-        light_on = (20, 2, 0)
-        light_off = (0, 0, 0)
+        while True:
 
-    while True:
+            # filter for O line
+            orange_filter = "filter%5Broute%5D=Orange"
 
-        # filter for O line
-        orange_filter = "filter%5Broute%5D=Orange"
+            pixel_list = get_data(orange_filter, 40)
 
-        pixel_list = get_data(orange_filter, 40)
+            for pix in range(40):
+                if pix in pixel_list:
+                    pixels[pix] = light_on
+                else:
+                    pixels[pix] = light_off
 
-        for pix in range(40):
-            if pix in pixel_list:
-                pixels[pix] = light_on
-            else:
-                pixels[pix] = light_off
+            pixels.show()
 
-        pixels.show()
-
-        time.sleep(5)
+            time.sleep(5)
+    except Exception as ee:
+        logger.error('ERROR: {}'.format(ee))
